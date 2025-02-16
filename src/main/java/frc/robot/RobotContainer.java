@@ -9,7 +9,10 @@ import static edu.wpi.first.units.Units.*;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.config.PIDConstants;
+import frc.robot.LimelightHelpers;
 
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -43,6 +46,8 @@ public class RobotContainer {
 
     /* Path follower */
     private final SendableChooser<Command> autoChooser;
+
+    private PIDController limelightPID = new PIDController(0.001, 0, 0);
 
     public RobotContainer() {
         autoChooser = AutoBuilder.buildAutoChooser("Tests");
@@ -80,6 +85,14 @@ public class RobotContainer {
         drivetrain.registerTelemetry(logger::telemeterize);
 
         // new JoystickButton(joystick, XboxController.Button.kA.value).onTrue(new InstantCommand(drivetrain::))
+        // tracking with limelight
+        joystick.x().whileTrue(
+            drivetrain.applyRequest(() ->
+            drive.withVelocityX(-joystick.getLeftY() * MaxSpeed * 0.4) // Drive forward with negative Y (forward)
+                .withVelocityY(-joystick.getLeftX() * MaxSpeed * 0.4) // Drive left with negative X (left)
+                .withRotationalRate(limelightPID.calculate(limelightPID.calculate(LimelightHelpers.getTX("limelight"), 0))) // Drive counterclockwise with negative X (left)
+        )
+        );
     }
 
     public Command getAutonomousCommand() {
